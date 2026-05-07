@@ -3,155 +3,105 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>安安的 AI 实时实验室 v6.0</title>
+    <title>安安的 AI 实验室 v7.0</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/3Dmol/2.0.4/3Dmol-min.js"></script>
     <style>
-        :root { --pink-soft: #FFD1DC; --purple-light: #E0BBE4; --mint-cream: #F5FFFA; --text-main: #6D5D6E; }
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'PingFang SC', sans-serif; }
-        body { background: #fdf5f7; display: flex; justify-content: center; overflow: hidden; }
-        .app-shell { width: 100%; max-width: 430px; height: 100vh; background: #fff; position: relative; display: flex; flex-direction: column; box-shadow: 0 10px 40px rgba(255,182,193,0.2); }
-        .ai-header { background: linear-gradient(135deg, var(--pink-soft), var(--purple-light)); padding: 30px 20px 20px; color: white; border-bottom-left-radius: 40px; position: relative; z-index: 10; }
-        .mana-bar { height: 6px; background: rgba(255,255,255,0.3); border-radius: 3px; margin-top: 10px; overflow: hidden; }
-        #mana-progress { width: 30%; height: 100%; background: #ff99aa; transition: 1s; }
-        #pet-container { position: absolute; right: 20px; bottom: 100px; width: 100px; height: 100px; z-index: 100; display: flex; flex-direction: column; align-items: center; }
-        .pet-body { width: 60px; height: 70px; background: linear-gradient(to bottom, #fff 50%, #ff99aa 50%); border: 3px solid var(--text-main); border-radius: 30px; position: relative; animation: float 3s ease-in-out infinite; display: flex; justify-content: center; align-items: center; font-size: 24px; }
-        .pet-eyes { position: absolute; top: 15px; width: 30px; display: flex; justify-content: space-between; }
-        .eye { width: 6px; height: 6px; background: #333; border-radius: 50%; }
-        .pet-dialog { background: rgba(255,255,255,0.9); border: 1px solid var(--pink-soft); padding: 5px 10px; border-radius: 10px; font-size: 11px; margin-bottom: 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); max-width: 120px; text-align: center; }
-        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
-        .jump { animation: jump 0.5s ease !important; }
-        @keyframes jump { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.2) translateY(-20px); } }
-        .sad { animation: shiver 0.5s infinite !important; }
-        @keyframes shiver { 0% { transform: translateX(0); } 25% { transform: translateX(-3px); } 75% { transform: translateX(3px); } }
-        #mol-container { width: 100%; height: 220px; background: #fafafa; border-radius: 25px; margin: 15px 0; border: 2px solid var(--mint-cream); position: relative; }
-        #mol-loader { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.8); display: none; justify-content: center; align-items: center; font-size: 12px; color: var(--pink-soft); z-index: 50; border-radius: 25px; }
-        .spinner { border: 4px solid #f3f3f3; border-top: 4px solid var(--pink-soft); border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; margin-right: 10px; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        .quiz-card { flex: 1; padding: 20px; overflow-y: auto; padding-bottom: 120px; }
-        .ai-bubble { background: var(--mint-cream); border-radius: 18px; padding: 15px; margin-bottom: 15px; border: 1px solid var(--purple-light); font-size: 14px; line-height: 1.5; }
-        .option-btn { width: 100%; padding: 12px; margin-bottom: 8px; border: 1px solid #eee; border-radius: 15px; background: #fff; text-align: left; cursor: pointer; font-size: 13px; }
-        .option-btn.correct { background: #e8f5e9 !important; border-color: #4caf50 !important; color: #2e7d32; }
-        .option-btn.wrong { background: #ffebee !important; border-color: #ef5350 !important; color: #c62828; }
-        .action-bar { padding: 20px; display: flex; gap: 10px; background: rgba(255,255,255,0.9); position: absolute; bottom: 0; width: 100%; border-top: 1px solid #eee; z-index: 90; }
-        .btn { flex: 1; padding: 14px; border: none; border-radius: 20px; color: white; font-weight: bold; cursor: pointer; transition: 0.2s; }
-        .btn:disabled { opacity: 0.6; cursor: not-allowed; }
-        .btn-ai { background: var(--purple-light); }
-        .btn-3d { background: var(--pink-soft); }
+        :root { --pink: #FFD1DC; --purple: #E0BBE4; --text: #6D5D6E; }
+        * { box-sizing: border-box; margin: 0; font-family: sans-serif; }
+        body { background: #fdf5f7; display: flex; justify-content: center; }
+        .app { width: 100%; max-width: 430px; height: 100vh; background: #fff; position: relative; display: flex; flex-direction: column; box-shadow: 0 10px 40px rgba(0,0,0,0.1); }
+        .header { background: linear-gradient(135deg, var(--pink), var(--purple)); padding: 25px 20px; color: white; border-bottom-left-radius: 30px; }
+        #pet-container { position: absolute; right: 20px; bottom: 100px; text-align: center; z-index: 100; }
+        .pet-body { width: 50px; height: 60px; background: white; border: 2px solid var(--text); border-radius: 25px; display: flex; justify-content: center; align-items: center; font-size: 20px; position: relative; }
+        .pet-dialog { background: white; border: 1px solid var(--pink); padding: 5px; border-radius: 8px; font-size: 10px; margin-bottom: 5px; max-width: 100px; }
+        #mol-container { width: 100%; height: 200px; background: #fafafa; border-radius: 20px; margin: 10px 0; position: relative; }
+        .quiz-card { flex: 1; padding: 15px; overflow-y: auto; padding-bottom: 100px; }
+        .bubble { background: #F5FFFA; border-radius: 15px; padding: 15px; margin-bottom: 10px; border: 1px solid var(--purple); font-size: 14px; }
+        .opt-btn { width: 100%; padding: 12px; margin-bottom: 5px; border: 1px solid #eee; border-radius: 12px; background: #fff; text-align: left; cursor: pointer; }
+        .correct { background: #e8f5e9 !important; border-color: #4caf50; }
+        .wrong { background: #ffebee !important; border-color: #ef5350; }
+        .action-bar { padding: 15px; display: flex; gap: 10px; background: white; position: absolute; bottom: 0; width: 100%; border-top: 1px solid #eee; }
+        .btn { flex: 1; padding: 12px; border: none; border-radius: 15px; color: white; font-weight: bold; cursor: pointer; }
+        .btn-ai { background: var(--purple); } .btn-3d { background: var(--pink); }
+        #loader { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); display: none; font-size: 12px; }
     </style>
 </head>
 <body>
-<div class="app-shell">
-    <div class="ai-header">
-        <h1>安安的 AI 实验室 v6.0</h1>
-        <div class="mana-bar"><div id="mana-progress"></div></div>
-        <p style="font-size: 11px; margin-top: 5px;">云端脑力：在线 | 丹丹灵力：<span id="mana-val">30</span></p>
+<div class="app">
+    <div class="header">
+        <h3>安安的 AI 实验室 ✨</h3>
+        <p style="font-size: 10px;">状态：DeepSeek 云端脑力已接入</p>
     </div>
     <div class="quiz-card">
-        <div id="mol-container"><div id="mol-loader"><div class="spinner"></div><span>正在连接云端...</span></div></div>
-        <div id="quiz-space">
-            <div class="ai-bubble">丹丹已接入互联网 AI 题库！点击下方按钮，我会去云端为你“现编”一道考题。</div>
-        </div>
+        <div id="mol-container"><div id="loader">🧬 加载中...</div></div>
+        <div id="quiz-space"><div class="bubble">准备好了吗？点击下方按钮，让 AI 为你实时出题！</div></div>
     </div>
     <div id="pet-container">
-        <div class="pet-dialog" id="pet-msg">准备连接云端...</div>
-        <div class="pet-body" id="pet-core">
-            <div class="pet-eyes"><div class="eye"></div><div class="eye"></div></div>💊
-        </div>
+        <div class="pet-dialog" id="msg">主人加油！</div>
+        <div class="pet-body">💊</div>
     </div>
     <div class="action-bar">
-        <button class="btn btn-3d" id="btn-3d-load" onclick="loadMolecular3D()">🔍 观察分子</button>
-        <button class="btn btn-ai" id="btn-quiz" onclick="generateRealAIQuiz()">🌐 AI 联网生题</button>
+        <button class="btn btn-3d" onclick="load3D()">🔍 观察分子</button>
+        <button class="btn btn-ai" id="ai-btn" onclick="askAI()">🧠 AI 联网出题</button>
     </div>
 </div>
 
 <script>
-    let currentDrug = null;
-    let mana = 30;
+    const KEY = "sk-02023056be5f4dc79b3e1f73a169c9aa"; 
+    let drug = null;
     let viewer = null;
 
-    const DanDan = {
-        speak(text) { document.getElementById('pet-msg').innerText = text; },
-        action(type) {
-            const core = document.getElementById('pet-core');
-            core.classList.remove('jump', 'sad');
-            void core.offsetWidth; core.classList.add(type);
-        },
-        updateMana(val) {
-            mana = Math.min(100, Math.max(0, mana + val));
-            document.getElementById('mana-progress').style.width = mana + '%';
-            document.getElementById('mana-val').innerText = mana;
-        }
-    };
-
-    // 真正的 AI 联网生题函数（使用免费代理接口测试）
-    async function generateRealAIQuiz() {
-        const btn = document.getElementById('btn-quiz');
+    async function askAI() {
+        const btn = document.getElementById('ai-btn');
         const space = document.getElementById('quiz-space');
         btn.disabled = true;
-        DanDan.speak("正在连接云端 AI...");
-        space.innerHTML = `<div class="ai-bubble">正在调动云端药学大脑，请稍候...</div>`;
+        document.getElementById('msg').innerText = "正在思考...";
+        space.innerHTML = `<div class="bubble">AI 正在云端翻阅药典...</div>`;
 
-        // 模拟 AI 逻辑（实际中这里对接API）
-        // 为了演示真正的“无限”感，我们模拟了一个从 50 个高频药中随机选取的逻辑
-        // 以后你可以配置真正的 API Key 来实现真 AI 对话
         try {
-            const drugs = [
-                {n:"利伐沙班", c:10239254, m:"选择性Xa因子抑制剂", e:"出血风险", i:"预防深静脉血栓"},
-                {n:"替格瑞洛", c:9871419, m:"P2Y12受体拮抗剂", e:"呼吸困难", i:"急性冠脉综合征"},
-                {n:"西格列汀", c:4369359, m:"DPP-4抑制剂", e:"鼻咽炎", i:"2型糖尿病"},
-                {n:"恩格列净", c:11949645, m:"SGLT2抑制剂", e:"泌尿道感染", i:"心衰及糖尿病"},
-                {n:"托伐普坦", c:112127, m:"血管加压素V2受体拮抗剂", e:"口渴/多尿", i:"低钠血症"}
-            ];
-            // 每次点击随机选一个
-            const d = drugs[Math.floor(Math.random()*drugs.length)];
-            currentDrug = { name: d.n, cid: d.c, msg: d.i };
+            const res = await fetch("https://api.deepseek.com/chat/completions", {
+                method: "POST",
+                headers: { "Content-Type": "application/json", "Authorization": `Bearer ${KEY}` },
+                body: JSON.stringify({
+                    model: "deepseek-chat",
+                    messages: [{role: "system", content: "药学专家出题。随机选一个重要西药出单选题，返回JSON格式：{name:'药名', cid:'PubChem CID', q:'题目', opts:['A','B','C','D'], a:'正确选项文字'}"}],
+                    response_format: { type: "json_object" }
+                })
+            });
+            const data = await res.json();
+            const quiz = JSON.parse(data.choices[0].message.content);
+            drug = { name: quiz.name, cid: quiz.cid };
 
-            setTimeout(() => {
-                space.innerHTML = `
-                    <div class="ai-bubble"><b>[云端实时生成]</b><br>药物：<b>${d.n}</b><br>问题：该药物的主要作用机制是什么？</div>
-                    <div id="options-box">
-                        <button class="option-btn" onclick="checkAn(this,true,'${d.m}')">${d.m}</button>
-                        <button class="option-btn" onclick="checkAn(this,false,'${d.m}')">抑制ACE酶活性</button>
-                        <button class="option-btn" onclick="checkAn(this,false,'${d.m}')">阻断钙离子通道</button>
-                    </div>
-                `;
-                DanDan.speak("云端题目下发成功！");
-                btn.disabled = false;
-            }, 1000);
+            space.innerHTML = `
+                <div class="bubble"><b>[考点]</b><br>${quiz.q}</div>
+                ${quiz.opts.map(o => `<button class="opt-btn" onclick="check(this, '${o}'==='${quiz.a}', '${quiz.a}')">${o}</button>`).join('')}
+            `;
+            document.getElementById('msg').innerText = "出好啦！";
         } catch (e) {
-            space.innerHTML = `<div class="ai-bubble">云端拥堵，请重试。</div>`;
-            btn.disabled = false;
-        }
+            space.innerHTML = `<div class="bubble">连接失败，请重试。</div>`;
+        } finally { btn.disabled = false; }
     }
 
-    function checkAn(btn, isRight, correct) {
-        if(isRight) {
-            btn.classList.add('correct'); DanDan.action('jump'); DanDan.speak("超厉害！这是云端高阶题！"); DanDan.updateMana(8);
-        } else {
-            btn.classList.add('wrong'); DanDan.action('sad'); DanDan.speak(`错了哟，应该是：${correct}`); DanDan.updateMana(-3);
-        }
-        document.querySelectorAll('.option-btn').forEach(b => b.disabled = true);
+    function check(btn, isRight, a) {
+        if(isRight) { btn.classList.add('correct'); document.getElementById('msg').innerText = "真棒！"; }
+        else { btn.classList.add('wrong'); document.getElementById('msg').innerText = "答案是:"+a; }
+        document.querySelectorAll('.opt-btn').forEach(b => b.disabled = true);
     }
 
-    async function loadMolecular3D() {
-        if (!currentDrug) { DanDan.speak("先出题，我才能加载分子哦"); return; }
-        const loader = document.getElementById('mol-loader');
-        const container = document.getElementById('mol-container');
-        loader.style.display = 'flex';
-        DanDan.speak(`联网调取 ${currentDrug.name} 的 3D 数据...`);
-        const oldCanvas = container.querySelector('canvas');
-        if (oldCanvas) oldCanvas.remove();
+    async function load3D() {
+        if(!drug) return alert("先请 AI 出题");
+        document.getElementById('loader').style.display = 'block';
+        const box = document.getElementById('mol-container');
+        const old = box.querySelector('canvas'); if(old) old.remove();
         try {
-            const url = `https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/${currentDrug.cid}/record/SDF/?record_type=3d`;
-            const res = await fetch(url);
-            const data = await res.text();
-            viewer = $3Dmol.createViewer(container, { backgroundColor: 'white' });
-            viewer.addModel(data, "sdf");
-            viewer.setStyle({}, {stick: {color: 'spectrum', radius: 0.2}});
+            const res = await fetch(`https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/${drug.cid}/record/SDF/?record_type=3d`);
+            const sdf = await res.text();
+            viewer = $3Dmol.createViewer(box, { backgroundColor: 'white' });
+            viewer.addModel(sdf, "sdf");
+            viewer.setStyle({}, {stick: {color: 'spectrum', radius: 0.25}});
             viewer.zoomTo(); viewer.render(); viewer.spin(true);
-            DanDan.speak(`临床应用：${currentDrug.msg}`);
-        } catch (e) { DanDan.speak("网络开小差了..."); }
-        finally { loader.style.display = 'none'; }
+        } catch (e) { alert("3D加载失败"); }
+        finally { document.getElementById('loader').style.display = 'none'; }
     }
 </script>
 </body>
