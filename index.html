@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>安安的药学实验室 v4.5</title>
+    <!-- 杠杆：引入专业3D分子渲染库 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/3Dmol/2.0.4/3Dmol-min.js"></script>
+    <style>
+        :root {
+            --pink-soft: #FFD1DC;
+            --purple-light: #E0BBE4;
+            --mint-cream: #F5FFFA;
+            --text-main: #6D5D6E;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'PingFang SC', 'Segoe UI', sans-serif; }
+        body { background: #fdf5f7; display: flex; justify-content: center; overflow: hidden; }
+
+        .app-shell {
+            width: 100%; max-width: 430px; height: 100vh;
+            background: #fff; position: relative; display: flex; flex-direction: column;
+            box-shadow: 0 10px 40px rgba(255,182,193,0.2); overflow: hidden;
+        }
+
+        /* 顶部状态栏 */
+        .ai-header {
+            background: linear-gradient(135deg, var(--pink-soft), var(--purple-light));
+            padding: 30px 20px 20px; color: white; border-bottom-left-radius: 40px;
+            position: relative; z-index: 10;
+        }
+        .mana-bar { height: 6px; background: rgba(255,255,255,0.3); border-radius: 3px; margin-top: 10px; overflow: hidden; }
+        #mana-progress { width: 30%; height: 100%; background: #ff99aa; transition: 1s; }
+
+        /* 灵宠丹丹 */
+        #pet-container {
+            position: absolute; right: 20px; bottom: 100px;
+            width: 100px; height: 100px; z-index: 100;
+            display: flex; flex-direction: column; align-items: center;
+        }
+        .pet-body {
+            width: 60px; height: 70px; 
+            background: linear-gradient(to bottom, #fff 50%, #ff99aa 50%);
+            border: 3px solid var(--text-main); border-radius: 30px;
+            position: relative; animation: float 3s ease-in-out infinite;
+            display: flex; justify-content: center; align-items: center; font-size: 24px;
+        }
+        .pet-eyes { position: absolute; top: 15px; width: 30px; display: flex; justify-content: space-between; }
+        .eye { width: 6px; height: 6px; background: #333; border-radius: 50%; }
+        
+        .pet-dialog {
+            background: rgba(255,255,255,0.9); border: 1px solid var(--pink-soft);
+            padding: 5px 10px; border-radius: 10px; font-size: 11px;
+            margin-bottom: 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            max-width: 120px; text-align: center;
+        }
+
+        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+        .jump { animation: jump 0.5s ease !important; }
+        @keyframes jump { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.2) translateY(-20px); } }
+        .sad { animation: shiver 0.5s infinite !important; }
+        @keyframes shiver { 0% { transform: translateX(0); } 25% { transform: translateX(-3px); } 75% { transform: translateX(3px); } }
+
+        /* 内容区 */
+        #mol-container {
+            width: 100%; height: 220px; background: #fafafa;
+            border-radius: 25px; margin: 15px 0; border: 2px solid var(--mint-cream);
+            position: relative;
+        }
+        #mol-loader {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255,255,255,0.8); display: none;
+            justify-content: center; align-items: center; font-size: 12px; color: var(--pink-soft);
+            z-index: 50; border-radius: 25px;
+        }
+        .spinner {
+            border: 4px solid #f3f3f3; border-top: 4px solid var(--pink-soft);
+            border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; margin-right: 10px;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        .quiz-card { flex: 1; padding: 20px; overflow-y: auto; padding-bottom: 120px; }
+        .ai-bubble {
+            background: var(--mint-cream); border-radius: 18px; padding: 15px;
+            margin-bottom: 15px; border: 1px solid var(--purple-light); font-size: 14px;
+        }
+
+        .option-btn {
+            width: 100%; padding: 12px; margin-bottom: 8px;
+            border: 1px solid #eee; border-radius: 15px; background: #fff;
+            text-align: left; cursor: pointer; font-size: 13px;
+        }
+        .option-btn.correct { background: #e8f5e9; border-color: #4caf50; color: #2e7d32; }
+        .option-btn.wrong { background: #ffebee; border-color: #ef5350; color: #c62828; }
+
+        /* 底部按钮 */
+        .action-bar {
+            padding: 20px; display: flex; gap: 10px; background: rgba(255,255,255,0.9);
+            position: absolute; bottom: 0; width: 100%; border-top: 1px solid #eee; z-index: 90;
+        }
+        .btn { flex: 1; padding: 14px; border: none; border-radius: 20px; color: white; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+        .btn-ai { background: var(--purple-light); }
+        .btn-3d { background: var(--pink-soft); }
+    </style>
+</head>
+<body>
+
+<div class="app-shell">
+    <div class="ai-header">
+        <h1>安安的实验室 v4.5 ✨</h1>
+        <div class="mana-bar"><div id="mana-progress"></div></div>
+        <p style="font-size: 11px; margin-top: 5px;">丹丹的灵力值：<span id="mana-val">30</span>/100</p>
+    </div>
+
+    <div class="quiz-card">
+        <div id="mol-container">
+            <div id="mol-loader"><div class="spinner"></div><span>数据调取中...</span></div>
+        </div>
+        <div id="quiz-space">
+            <div class="ai-bubble">丹丹正睁大眼睛看着你复习！生成题目，然后观察分子吧~</div>
+        </div>
+    </div>
+
+    <div id="pet-container">
+        <div class="pet-dialog" id="pet-msg">主人加油鸭！</div>
+        <div class="pet-body" id="pet-core">
+            <div class="pet-eyes"><div class="eye"></div><div class="eye"></div></div>
+            💊
+        </div>
+    </div>
+
+    <div class="action-bar">
+        <button class="btn btn-3d" id="btn-3d-load" onclick="loadMolecular3D()">🔍 观察分子</button>
+        <button class="btn btn-ai" onclick="generateAIQuiz()">🧠 AI 生题</button>
+    </div>
+</div>
+
+<script>
+    const DRUG_GENOME = [
+        { name: "阿司匹林", cid: 2244, mech: "抑制环氧化酶(COX)", effect: "胃肠道出血", msg: "酸酸的，要注意胃哦！" },
+        { name: "硝苯地平", cid: 4481, mech: "阻滞L型钙通道", effect: "踝关节水肿", msg: "心血管卫士出场！" },
+        { name: "二甲双胍", cid: 4091, mech: "增加胰岛素敏感性", effect: "乳酸酸中毒", msg: "糖友的基石药物~" },
+        { name: "青霉素G", cid: 5904, mech: "抑制细菌细胞壁合成", effect: "过敏性休克", msg: "记得皮试！皮试！" }
+    ];
+
+    let currentDrug = null;
+    let mana = 30;
+    let viewer = null;
+
+    const DanDan = {
+        speak(text) { document.getElementById('pet-msg').innerText = text; },
+        action(type) {
+            const core = document.getElementById('pet-core');
+            core.classList.remove('jump', 'sad');
+            void core.offsetWidth; 
+            core.classList.add(type);
+        },
+        updateMana(val) {
+            mana = Math.min(100, Math.max(0, mana + val));
+            document.getElementById('mana-progress').style.width = mana + '%';
+            document.getElementById('mana-val').innerText = mana;
+        }
+    };
+
+    function generateAIQuiz() {
+        DanDan.speak("正在翻阅云端药典...");
+        const space = document.getElementById('quiz-space');
+        currentDrug = DRUG_GENOME[Math.floor(Math.random() * DRUG_GENOME.length)];
+        const type = Math.floor(Math.random() * 2);
+        let q = type === 0 ? `【${currentDrug.name}】的作用机制是？` : `【${currentDrug.name}】的典型不良反应是？`;
+        let correct = type === 0 ? currentDrug.mech : currentDrug.effect;
+        let options = [correct, ...DRUG_GENOME.filter(d => d.name !== currentDrug.name).map(d => type === 0 ? d.mech : d.effect)].sort(() => Math.random() - 0.5);
+
+        space.innerHTML = `
+            <div class="ai-bubble"><b>[AI 生题]</b><br>${q}</div>
+            <div id="options-box">
+                ${options.slice(0,4).map(opt => `<button class="option-btn" onclick="checkAnswer(this, '${opt}', '${correct}')">${opt}</button>`).join('')}
+            </div>
+        `;
+    }
+
+    function checkAnswer(btn, selected, correct) {
+        if (selected === correct) {
+            btn.classList.add('correct');
+            DanDan.action('jump');
+            DanDan.speak("太棒啦！+5灵力");
+            DanDan.updateMana(5);
+        } else {
+            btn.classList.add('wrong');
+            DanDan.action('sad');
+            DanDan.speak("哎呀...没关系再来！");
+            DanDan.updateMana(-2);
+        }
+        document.querySelectorAll('.option-btn').forEach(b => b.disabled = true);
+    }
+
+    async function loadMolecular3D() {
+        if (!currentDrug) { DanDan.speak("先出题，我才能找分子呀"); return; }
+        const loader = document.getElementById('mol-loader');
+        const container = document.getElementById('mol-container');
+        const btn3d = document.getElementById('btn-3d-load');
+
+        loader.style.display = 'flex';
+        btn3d.disabled = true;
+        DanDan.speak(`正在向PubChem调取${currentDrug.name}...`);
+
+        const oldCanvas = container.querySelector('canvas');
+        if (oldCanvas) oldCanvas.remove();
+
+        const url = `https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/${currentDrug.cid}/record/SDF/?record_type=3d`;
+        
+        try {
+            const response = await fetch(url);
+            if (!response.ok) throw new Error("网络错误");
+            const data = await response.text();
+            
+            if (viewer) { viewer.clear(); }
+            viewer = $3Dmol.createViewer(container, { backgroundColor: 'white' });
+            viewer.addModel(data, "sdf");
+            viewer.setStyle({}, {stick: {color: 'spectrum', radius: 0.2}});
+            viewer.zoomTo();
+            viewer.render();
+            viewer.spin(true);
+            DanDan.speak(`成功！${currentDrug.msg}`);
+        } catch (error) {
+            DanDan.speak("网络连接超时，请重试...");
+            DanDan.action('sad');
+        } finally {
+            loader.style.display = 'none';
+            btn3d.disabled = false;
+        }
+    }
+</script>
+</body>
+</html>
