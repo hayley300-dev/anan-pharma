@@ -3,8 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>安安的药学实验室 v4.5</title>
-    <!-- 杠杆：引入专业3D分子渲染库 -->
+    <title>安安的药学实验室 v5.0</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/3Dmol/2.0.4/3Dmol-min.js"></script>
     <style>
         :root {
@@ -22,7 +21,6 @@
             box-shadow: 0 10px 40px rgba(255,182,193,0.2); overflow: hidden;
         }
 
-        /* 顶部状态栏 */
         .ai-header {
             background: linear-gradient(135deg, var(--pink-soft), var(--purple-light));
             padding: 30px 20px 20px; color: white; border-bottom-left-radius: 40px;
@@ -31,7 +29,6 @@
         .mana-bar { height: 6px; background: rgba(255,255,255,0.3); border-radius: 3px; margin-top: 10px; overflow: hidden; }
         #mana-progress { width: 30%; height: 100%; background: #ff99aa; transition: 1s; }
 
-        /* 灵宠丹丹 */
         #pet-container {
             position: absolute; right: 20px; bottom: 100px;
             width: 100px; height: 100px; z-index: 100;
@@ -60,7 +57,6 @@
         .sad { animation: shiver 0.5s infinite !important; }
         @keyframes shiver { 0% { transform: translateX(0); } 25% { transform: translateX(-3px); } 75% { transform: translateX(3px); } }
 
-        /* 内容区 */
         #mol-container {
             width: 100%; height: 220px; background: #fafafa;
             border-radius: 25px; margin: 15px 0; border: 2px solid var(--mint-cream);
@@ -89,10 +85,9 @@
             border: 1px solid #eee; border-radius: 15px; background: #fff;
             text-align: left; cursor: pointer; font-size: 13px;
         }
-        .option-btn.correct { background: #e8f5e9; border-color: #4caf50; color: #2e7d32; }
-        .option-btn.wrong { background: #ffebee; border-color: #ef5350; color: #c62828; }
+        .option-btn.correct { background: #e8f5e9 !important; border-color: #4caf50 !important; color: #2e7d32; }
+        .option-btn.wrong { background: #ffebee !important; border-color: #ef5350 !important; color: #c62828; }
 
-        /* 底部按钮 */
         .action-bar {
             padding: 20px; display: flex; gap: 10px; background: rgba(255,255,255,0.9);
             position: absolute; bottom: 0; width: 100%; border-top: 1px solid #eee; z-index: 90;
@@ -107,22 +102,22 @@
 
 <div class="app-shell">
     <div class="ai-header">
-        <h1>安安的实验室 v4.5 ✨</h1>
+        <h1>安安的实验室 v5.0 ✨</h1>
         <div class="mana-bar"><div id="mana-progress"></div></div>
-        <p style="font-size: 11px; margin-top: 5px;">丹丹的灵力值：<span id="mana-val">30</span>/100</p>
+        <p style="font-size: 11px; margin-top: 5px;">丹丹灵力：<span id="mana-val">30</span>/100</p>
     </div>
 
     <div class="quiz-card">
         <div id="mol-container">
-            <div id="mol-loader"><div class="spinner"></div><span>数据调取中...</span></div>
+            <div id="mol-loader"><div class="spinner"></div><span>分子构建中...</span></div>
         </div>
         <div id="quiz-space">
-            <div class="ai-bubble">丹丹正睁大眼睛看着你复习！生成题目，然后观察分子吧~</div>
+            <div class="ai-bubble">丹丹已加载 12 类高频药物题库！快点击“AI 生题”开始挑战~</div>
         </div>
     </div>
 
     <div id="pet-container">
-        <div class="pet-dialog" id="pet-msg">主人加油鸭！</div>
+        <div class="pet-dialog" id="pet-msg">主人，要开始复习吗？</div>
         <div class="pet-body" id="pet-core">
             <div class="pet-eyes"><div class="eye"></div><div class="eye"></div></div>
             💊
@@ -136,11 +131,20 @@
 </div>
 
 <script>
+    // 扩展版题库：12个高频考点药物
     const DRUG_GENOME = [
         { name: "阿司匹林", cid: 2244, mech: "抑制环氧化酶(COX)", effect: "胃肠道出血", msg: "酸酸的，要注意胃哦！" },
-        { name: "硝苯地平", cid: 4481, mech: "阻滞L型钙通道", effect: "踝关节水肿", msg: "心血管卫士出场！" },
-        { name: "二甲双胍", cid: 4091, mech: "增加胰岛素敏感性", effect: "乳酸酸中毒", msg: "糖友的基石药物~" },
-        { name: "青霉素G", cid: 5904, mech: "抑制细菌细胞壁合成", effect: "过敏性休克", msg: "记得皮试！皮试！" }
+        { name: "硝苯地平", cid: 4481, mech: "阻滞L型钙通道", effect: "踝关节水肿", msg: "地平类常用药，注意下肢水肿~" },
+        { name: "普萘洛尔", cid: 4946, mech: "非选择性β受体阻断剂", effect: "支气管痉挛", msg: "哮喘患者绝对不能用！" },
+        { name: "二甲双胍", cid: 4091, mech: "增加胰岛素敏感性", effect: "乳酸酸中毒", msg: "糖友的基石药物，减肥也有人用？" },
+        { name: "格列本脲", cid: 3478, mech: "促进胰岛素分泌", effect: "严重低血糖", msg: "劲头很大，当心低血糖晕倒！" },
+        { name: "青霉素G", cid: 5904, mech: "抑制细菌细胞壁合成", effect: "过敏性休克", msg: "一定要皮试！记住没？" },
+        { name: "左氧氟沙星", cid: 149096, mech: "抑制DNA螺旋酶", effect: "软骨组织损害", msg: "小孩和孕妇都不能吃喹诺酮类。" },
+        { name: "阿奇霉素", cid: 446135, mech: "抑制蛋白质合成(50S)", effect: "QT间期延长", msg: "这个环很大，叫大环内酯。" },
+        { name: "奥美拉唑", cid: 4594, mech: "质子泵抑制剂(PPI)", effect: "骨质疏松风险", msg: "抑制胃酸的“神药”。" },
+        { name: "雷尼替丁", cid: 3033332, mech: "H2受体拮抗剂", effect: "头晕/皮疹", msg: "消化性溃疡的二线选择。" },
+        { name: "对乙酰氨基酚", cid: 1983, mech: "抑制中枢PG合成", effect: "肝毒性", msg: "感冒药里的常客，别过量！" },
+        { name: "吗啡", cid: 5288826, mech: "激动μ阿片受体", effect: "呼吸抑制/便秘", msg: "镇痛王者，但要小心成瘾。" }
     ];
 
     let currentDrug = null;
@@ -163,18 +167,26 @@
     };
 
     function generateAIQuiz() {
-        DanDan.speak("正在翻阅云端药典...");
+        DanDan.speak("正在搜索题库...");
         const space = document.getElementById('quiz-space');
         currentDrug = DRUG_GENOME[Math.floor(Math.random() * DRUG_GENOME.length)];
         const type = Math.floor(Math.random() * 2);
-        let q = type === 0 ? `【${currentDrug.name}】的作用机制是？` : `【${currentDrug.name}】的典型不良反应是？`;
+        
+        let q = type === 0 ? `【${currentDrug.name}】的作用机制是？` : `【${currentDrug.name}】最典型的不良反应是？`;
         let correct = type === 0 ? currentDrug.mech : currentDrug.effect;
-        let options = [correct, ...DRUG_GENOME.filter(d => d.name !== currentDrug.name).map(d => type === 0 ? d.mech : d.effect)].sort(() => Math.random() - 0.5);
+        
+        let allOptions = DRUG_GENOME.map(d => type === 0 ? d.mech : d.effect);
+        let options = [correct];
+        while(options.length < 4) {
+            let randOpt = allOptions[Math.floor(Math.random() * allOptions.length)];
+            if(!options.includes(randOpt)) options.push(randOpt);
+        }
+        options.sort(() => Math.random() - 0.5);
 
         space.innerHTML = `
-            <div class="ai-bubble"><b>[AI 生题]</b><br>${q}</div>
+            <div class="ai-bubble"><b>[考点挑战]</b><br>${q}</div>
             <div id="options-box">
-                ${options.slice(0,4).map(opt => `<button class="option-btn" onclick="checkAnswer(this, '${opt}', '${correct}')">${opt}</button>`).join('')}
+                ${options.map(opt => `<button class="option-btn" onclick="checkAnswer(this, '${opt}', '${correct}')">${opt}</button>`).join('')}
             </div>
         `;
     }
@@ -183,35 +195,34 @@
         if (selected === correct) {
             btn.classList.add('correct');
             DanDan.action('jump');
-            DanDan.speak("太棒啦！+5灵力");
+            DanDan.speak("答对啦！灵力+5");
             DanDan.updateMana(5);
         } else {
             btn.classList.add('wrong');
             DanDan.action('sad');
-            DanDan.speak("哎呀...没关系再来！");
+            DanDan.speak(`哎呀，应该是：${correct}`);
             DanDan.updateMana(-2);
         }
         document.querySelectorAll('.option-btn').forEach(b => b.disabled = true);
     }
 
     async function loadMolecular3D() {
-        if (!currentDrug) { DanDan.speak("先出题，我才能找分子呀"); return; }
+        if (!currentDrug) { DanDan.speak("先出题，我才能加载分子哦"); return; }
         const loader = document.getElementById('mol-loader');
         const container = document.getElementById('mol-container');
         const btn3d = document.getElementById('btn-3d-load');
 
         loader.style.display = 'flex';
         btn3d.disabled = true;
-        DanDan.speak(`正在向PubChem调取${currentDrug.name}...`);
+        DanDan.speak(`正在抓取${currentDrug.name}的3D结构...`);
 
         const oldCanvas = container.querySelector('canvas');
         if (oldCanvas) oldCanvas.remove();
 
-        const url = `https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/${currentDrug.cid}/record/SDF/?record_type=3d`;
-        
         try {
+            const url = `https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/${currentDrug.cid}/record/SDF/?record_type=3d`;
             const response = await fetch(url);
-            if (!response.ok) throw new Error("网络错误");
+            if (!response.ok) throw new Error();
             const data = await response.text();
             
             if (viewer) { viewer.clear(); }
@@ -221,10 +232,9 @@
             viewer.zoomTo();
             viewer.render();
             viewer.spin(true);
-            DanDan.speak(`成功！${currentDrug.msg}`);
-        } catch (error) {
-            DanDan.speak("网络连接超时，请重试...");
-            DanDan.action('sad');
+            DanDan.speak(currentDrug.msg);
+        } catch (e) {
+            DanDan.speak("网络开小差了，再试一次？");
         } finally {
             loader.style.display = 'none';
             btn3d.disabled = false;
