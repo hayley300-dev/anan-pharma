@@ -3,93 +3,94 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>安安的闪电实验室 v12.0</title>
+    <title>安安的药学闪电实验室 v13.0</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/3Dmol/2.0.4/3Dmol-min.js"></script>
     <style>
-        :root { --p: #FFD1DC; --v: #E0BBE4; --bg: #fdf5f7; --card: #fff; --txt: #444; }
+        :root { --p: #FFD1DC; --v: #E0BBE4; --success: #4caf50; --error: #ff5252; --bg: #fdf5f7; }
         * { box-sizing: border-box; font-family: 'PingFang SC', sans-serif; }
         body { background: var(--bg); margin: 0; display: flex; justify-content: center; height: 100vh; overflow: hidden; }
-        .app { width: 100%; max-width: 430px; background: var(--card); display: flex; flex-direction: column; position: relative; box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
+        .app { width: 100%; max-width: 430px; background: white; display: flex; flex-direction: column; position: relative; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
         
-        /* 顶部状态 */
+        /* 顶部状态栏 */
         .header { background: linear-gradient(135deg, var(--p), var(--v)); padding: 20px; color: white; border-bottom-left-radius: 30px; }
-        .queue-tag { font-size: 10px; background: rgba(0,0,0,0.1); padding: 4px 8px; border-radius: 10px; float: right; }
+        .stats { font-size: 12px; display: flex; justify-content: space-between; margin-top: 5px; opacity: 0.9; }
 
-        /* 题目展示区 */
-        .stage { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; }
-        .quiz-container { animation: fadeIn 0.4s ease; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        /* 答题区 */
+        .stage { flex: 1; padding: 20px; overflow-y: auto; }
+        .q-card { animation: slideUp 0.4s ease; }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
         
-        .q-text { font-size: 18px; font-weight: bold; margin-bottom: 20px; color: var(--txt); line-height: 1.4; }
+        .q-text { font-size: 18px; font-weight: bold; margin-bottom: 20px; color: #333; line-height: 1.5; }
         .opt { 
-            width: 100%; padding: 16px; margin-bottom: 12px; border: 2px solid #f0f0f0; 
+            width: 100%; padding: 15px; margin-bottom: 10px; border: 2px solid #f0f0f0; 
             border-radius: 15px; background: white; text-align: left; cursor: pointer;
-            font-size: 15px; transition: 0.2s;
+            font-size: 15px; transition: all 0.2s; position: relative;
         }
-        /* 关键：正确错误样式 */
-        .correct { background: #4caf50 !important; color: white !important; border-color: #4caf50 !important; transform: scale(1.02); }
-        .wrong { background: #ff5252 !important; color: white !important; border-color: #ff5252 !important; }
-
-        /* 3D 容器 */
-        #mol-view { width: 100%; height: 180px; background: #fafafa; border-radius: 20px; margin: 15px 0; display: none; }
-
-        /* 底部按钮 */
-        .controls { padding: 20px; display: flex; gap: 10px; background: white; border-top: 1px solid #eee; }
-        .btn { flex: 1; padding: 15px; border: none; border-radius: 20px; font-weight: bold; cursor: pointer; }
-        .btn-next { background: var(--v); color: white; display: none; }
-        .btn-mol { background: var(--p); color: white; }
         
-        #init-loader { position: absolute; inset: 0; background: white; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 100; }
+        /* 对错反馈样式 */
+        .opt.correct { background: var(--success) !important; color: white !important; border-color: var(--success) !important; box-shadow: 0 4px 10px rgba(76,175,80,0.3); }
+        .opt.wrong { background: var(--error) !important; color: white !important; border-color: var(--error) !important; animation: shake 0.3s; }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+
+        /* 解析面板 */
+        .explain-panel { 
+            margin-top: 20px; padding: 15px; background: #f9f9f9; border-left: 5px solid var(--v);
+            border-radius: 10px; display: none; animation: fadeIn 0.5s;
+        }
+        .explain-title { font-weight: bold; color: var(--v); margin-bottom: 5px; font-size: 14px; }
+        .explain-content { font-size: 13px; color: #666; line-height: 1.6; }
+
+        /* 3D视图 */
+        #mol-view { width: 100%; height: 180px; background: #fafafa; border-radius: 20px; margin-top: 15px; display: none; }
+
+        /* 底部导航 */
+        .footer { padding: 15px; background: white; border-top: 1px solid #eee; display: flex; gap: 10px; }
+        .btn { flex: 1; padding: 15px; border: none; border-radius: 20px; font-weight: bold; cursor: pointer; transition: 0.3s; }
+        .btn-next { background: var(--v); color: white; display: none; }
+        .btn-mol { background: #eee; color: #777; font-size: 12px; }
+        
+        #loading { position: absolute; inset: 0; background: white; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 100; }
     </style>
 </head>
 <body>
-
 <div class="app">
-    <!-- 初始化加载遮罩 -->
-    <div id="init-loader">
-        <div style="font-size: 40px; margin-bottom: 20px;">🧪</div>
-        <p>实验室初始化中...</p>
-        <p style="font-size: 12px; color: #999;">正在后台为你预热首批题目</p>
-    </div>
-
+    <div id="loading"><div>🧪 实验室预热中...</div></div>
     <div class="header">
-        <span class="queue-tag">后台缓冲: <b id="q-size">0</b></span>
-        <h3 style="margin:0">安安的闪电考场 ✨</h3>
-    </div>
-
-    <div class="stage">
-        <div id="quiz-space" class="quiz-container">
-            <p>等待 AI 派发题目...</p>
+        <h3 style="margin:0">安安的闪电药理 ✨</h3>
+        <div class="stats">
+            <span>缓冲题库: <b id="q-size">0</b></span>
+            <span>正确率: <b id="acc">0%</b></span>
         </div>
+    </div>
+    <div class="stage">
+        <div id="quiz-space"></div>
         <div id="mol-view"></div>
     </div>
-
-    <div class="controls">
+    <div class="footer">
         <button class="btn btn-mol" onclick="toggleMol()">🔬 分子结构</button>
-        <button class="btn btn-next" id="next-btn" onclick="nextQuestion()">下一题 (秒开) 🚀</button>
+        <button class="btn btn-next" id="next-btn" onclick="nextQuestion()">下一题 (已秒开) 🚀</button>
     </div>
 </div>
-
 <script>
     const API_KEY = "sk-9c2b3a4d7e574bb69ba15f2b5b1b7f45";
-    let quizQueue = []; // 题目缓冲队列
-    let currentQuiz = null;
+    let queue = []; 
+    let current = null;
     let isFetching = false;
+    let score = { right: 0, total: 0 };
 
-    // 1. 初始化：先抓一批题
+    // 初始化：启动时连抓两波题，确保库存充足
     init();
 
     async function init() {
-        await fetchMoreTasks();
-        document.getElementById('init-loader').style.display = 'none';
+        await fetchBatch();
+        document.getElementById('loading').style.display = 'none';
         nextQuestion();
     }
 
-    // 2. 后台取题函数 (杠杆：后台自动运行)
-    async function fetchMoreTasks() {
-        if (isFetching || quizQueue.length > 5) return;
+    // 后台补货：保持题库在 3-5 道左右
+    async function fetchBatch() {
+        if (isFetching || queue.length >= 5) return;
         isFetching = true;
-        console.log("后台：正在补充题库...");
         
         try {
             const res = await fetch("https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions", {
@@ -99,100 +100,96 @@
                     model: "qwen-plus",
                     messages: [{
                         role: "system", 
-                        content: `药学专家模式。随机种子：${Math.random()}。出3道不同的药师考题。返回JSON格式：{"list":[{"drug":"名","cid":"CID","q":"题","opts":["A","B","C","D"],"a":"答案"}]}`
+                        content: `药学专家。随机种子${Math.random()}。出3道不同的选择题。返回严格JSON：{"list":[{"drug":"名","cid":"CID","q":"题目","opts":["A","B","C","D"],"a":"答案","e":"详细解析"}]}`
                     }],
-                    temperature: 0.9
+                    temperature: 0.8
                 })
             });
             const data = await res.json();
-            const newQuizzes = JSON.parse(data.choices[0].message.content).list;
-            quizQueue.push(...newQuizzes);
-            updateQueueUI();
+            const list = JSON.parse(data.choices[0].message.content).list;
+            queue.push(...list);
+            document.getElementById('q-size').innerText = queue.length;
         } catch (e) {
-            console.error("后台取题失败", e);
+            console.error("补货失败", e);
         } finally {
             isFetching = false;
         }
     }
 
-    // 3. 切换下一题
     function nextQuestion() {
-        if (quizQueue.length === 0) {
-            alert("你太快了！AI 还在赶工中，请稍等一秒。");
-            fetchMoreTasks();
+        if (queue.length === 0) {
+            document.getElementById('loading').style.display = 'flex';
+            init();
             return;
         }
 
-        currentQuiz = quizQueue.shift(); // 从队列头部拿题
-        updateQueueUI();
-        renderQuiz();
+        current = queue.shift();
+        document.getElementById('q-size').innerText = queue.length;
+        render();
         
-        // 杠杆：核心逻辑！只要队列少于 3 道，立刻在后台静默补充
-        if (quizQueue.length < 3) {
-            fetchMoreTasks();
-        }
+        // 答题同时，偷偷在后台检查是否需要补货
+        fetchBatch();
     }
 
-    function renderQuiz() {
+    function render() {
         const space = document.getElementById('quiz-space');
         document.getElementById('next-btn').style.display = 'none';
         document.getElementById('mol-view').style.display = 'none';
         
         space.innerHTML = `
-            <div class="q-text">${currentQuiz.q}</div>
-            <div id="opts-box">
-                ${currentQuiz.opts.map(o => `<button class="opt" onclick="checkAnswer(this, '${o}')">${o}</button>`).join('')}
+            <div class="q-card">
+                <div class="q-text">${current.q}</div>
+                <div id="opts-box">
+                    ${current.opts.map(o => `<button class="opt" onclick="handle(this, '${o}')">${o}</button>`).join('')}
+                </div>
+                <div id="explain-box" class="explain-panel">
+                    <div class="explain-title">💡 阿里导师解析</div>
+                    <div class="explain-content">${current.e}</div>
+                </div>
             </div>
         `;
     }
 
-    // 4. 判题逻辑（带修正）
-    function checkAnswer(btn, selected) {
-        const buttons = document.querySelectorAll('.opt');
-        buttons.forEach(b => b.disabled = true); // 防止重复点击
-
-        const correct = currentQuiz.a.trim();
-        const selectedTrim = selected.trim();
-
-        if (selectedTrim === correct) {
+    function handle(btn, selected) {
+        const btns = document.querySelectorAll('.opt');
+        btns.forEach(b => b.disabled = true);
+        
+        score.total++;
+        const isRight = selected.trim() === current.a.trim();
+        
+        if (isRight) {
             btn.classList.add('correct');
+            score.right++;
         } else {
             btn.classList.add('wrong');
-            // 高亮正确的那一个
-            buttons.forEach(b => {
-                if(b.innerText.trim() === correct) b.classList.add('correct');
+            // 自动标记出正确答案
+            btns.forEach(b => {
+                if(b.innerText.trim() === current.a.trim()) b.classList.add('correct');
             });
         }
 
-        // 显示“下一题”按钮
+        // 更新正确率
+        document.getElementById('acc').innerText = Math.round((score.right/score.total)*100) + "%";
+        
+        // 【关键】显示解析面板和下一题按钮
+        document.getElementById('explain-box').style.display = 'block';
         document.getElementById('next-btn').style.display = 'block';
     }
 
-    function updateQueueUI() {
-        document.getElementById('q-size').innerText = quizQueue.length;
-    }
-
-    // 5. 3D 分子切换
     async function toggleMol() {
-        const view = document.getElementById('mol-view');
-        if (view.style.display === 'block') {
-            view.style.display = 'none';
-            return;
-        }
-        view.style.display = 'block';
-        view.innerHTML = "<p style='text-align:center; padding-top:70px; font-size:12px;'>模型载入中...</p>";
-        
+        const v = document.getElementById('mol-view');
+        if (v.style.display === 'block') { v.style.display = 'none'; return; }
+        v.style.display = 'block';
+        v.innerHTML = "<div style='text-align:center;padding-top:70px'>模型构建中...</div>";
         try {
-            const res = await fetch(`https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/${currentQuiz.cid}/record/SDF/?record_type=3d`);
+            const res = await fetch(`https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/${current.cid}/record/SDF/?record_type=3d`);
             const sdf = await res.text();
-            view.innerHTML = "";
-            let viewer = $3Dmol.createViewer(view, { backgroundColor: 'white' });
+            v.innerHTML = "";
+            let viewer = $3Dmol.createViewer(v, { backgroundColor: 'white' });
             viewer.addModel(sdf, "sdf");
-            viewer.setStyle({}, {stick: {color: 'spectrum', radius: 0.25}});
+            viewer.setStyle({}, {stick: {color: 'spectrum', radius: 0.2}});
             viewer.zoomTo(); viewer.render(); viewer.spin(true);
-        } catch (e) {
-            view.innerHTML = "<p style='text-align:center; padding-top:70px;'>该药品无3D模型</p>";
-        }
+        } catch (e) { v.innerHTML = "无3D数据"; }
     }
 </script>
 </body>
