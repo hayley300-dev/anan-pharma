@@ -3,105 +3,136 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>安安的 AI 实验室 v7.0</title>
+    <title>安安的 AI 实验室 v8.0 (Qwen版)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/3Dmol/2.0.4/3Dmol-min.js"></script>
     <style>
-        :root { --pink: #FFD1DC; --purple: #E0BBE4; --text: #6D5D6E; }
-        * { box-sizing: border-box; margin: 0; font-family: sans-serif; }
+        :root { --pink: #FFD1DC; --purple: #E0BBE4; --text: #6D5D6E; --mint: #F5FFFA; }
+        * { box-sizing: border-box; margin: 0; font-family: 'PingFang SC', sans-serif; }
         body { background: #fdf5f7; display: flex; justify-content: center; }
         .app { width: 100%; max-width: 430px; height: 100vh; background: #fff; position: relative; display: flex; flex-direction: column; box-shadow: 0 10px 40px rgba(0,0,0,0.1); }
         .header { background: linear-gradient(135deg, var(--pink), var(--purple)); padding: 25px 20px; color: white; border-bottom-left-radius: 30px; }
+        .mana-bar { height: 4px; background: rgba(255,255,255,0.3); border-radius: 2px; margin-top: 8px; }
+        #mana-fill { width: 30%; height: 100%; background: white; transition: 0.5s; }
         #pet-container { position: absolute; right: 20px; bottom: 100px; text-align: center; z-index: 100; }
-        .pet-body { width: 50px; height: 60px; background: white; border: 2px solid var(--text); border-radius: 25px; display: flex; justify-content: center; align-items: center; font-size: 20px; position: relative; }
-        .pet-dialog { background: white; border: 1px solid var(--pink); padding: 5px; border-radius: 8px; font-size: 10px; margin-bottom: 5px; max-width: 100px; }
-        #mol-container { width: 100%; height: 200px; background: #fafafa; border-radius: 20px; margin: 10px 0; position: relative; }
+        .pet-body { width: 50px; height: 60px; background: white; border: 2px solid var(--text); border-radius: 25px; display: flex; justify-content: center; align-items: center; font-size: 20px; position: relative; animation: float 3s infinite; }
+        .pet-dialog { background: white; border: 1px solid var(--pink); padding: 5px 8px; border-radius: 10px; font-size: 10px; margin-bottom: 5px; max-width: 100px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+        #mol-container { width: 100%; height: 210px; background: #fafafa; border-radius: 20px; margin: 10px 0; border: 1px solid var(--mint); position: relative; }
         .quiz-card { flex: 1; padding: 15px; overflow-y: auto; padding-bottom: 100px; }
-        .bubble { background: #F5FFFA; border-radius: 15px; padding: 15px; margin-bottom: 10px; border: 1px solid var(--purple); font-size: 14px; }
-        .opt-btn { width: 100%; padding: 12px; margin-bottom: 5px; border: 1px solid #eee; border-radius: 12px; background: #fff; text-align: left; cursor: pointer; }
-        .correct { background: #e8f5e9 !important; border-color: #4caf50; }
-        .wrong { background: #ffebee !important; border-color: #ef5350; }
-        .action-bar { padding: 15px; display: flex; gap: 10px; background: white; position: absolute; bottom: 0; width: 100%; border-top: 1px solid #eee; }
+        .bubble { background: var(--mint); border-radius: 15px; padding: 15px; margin-bottom: 12px; border: 1px solid var(--purple); font-size: 14px; line-height: 1.6; }
+        .opt-btn { width: 100%; padding: 12px; margin-bottom: 8px; border: 1px solid #eee; border-radius: 12px; background: #fff; text-align: left; cursor: pointer; transition: 0.2s; }
+        .correct { background: #e8f5e9 !important; border-color: #4caf50; color: #2e7d32; }
+        .wrong { background: #ffebee !important; border-color: #ef5350; color: #c62828; }
+        .action-bar { padding: 15px; display: flex; gap: 10px; background: rgba(255,255,255,0.9); position: absolute; bottom: 0; width: 100%; border-top: 1px solid #eee; }
         .btn { flex: 1; padding: 12px; border: none; border-radius: 15px; color: white; font-weight: bold; cursor: pointer; }
-        .btn-ai { background: var(--purple); } .btn-3d { background: var(--pink); }
-        #loader { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); display: none; font-size: 12px; }
+        .btn-ai { background: var(--purple); box-shadow: 0 4px 10px rgba(224,187,228,0.3); } 
+        .btn-3d { background: var(--pink); box-shadow: 0 4px 10px rgba(255,209,220,0.3); }
+        #loader { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); display: none; font-size: 12px; color: var(--text); }
     </style>
 </head>
 <body>
 <div class="app">
     <div class="header">
-        <h3>安安的 AI 实验室 ✨</h3>
-        <p style="font-size: 10px;">状态：DeepSeek 云端脑力已接入</p>
+        <h3>安安的实验室 v8.0 ✨</h3>
+        <div class="mana-bar"><div id="mana-fill"></div></div>
+        <p style="font-size: 10px; margin-top:5px;">引擎：通义千问 Plus | 灵力：在线</p>
     </div>
     <div class="quiz-card">
-        <div id="mol-container"><div id="loader">🧬 加载中...</div></div>
-        <div id="quiz-space"><div class="bubble">准备好了吗？点击下方按钮，让 AI 为你实时出题！</div></div>
+        <div id="mol-container"><div id="loader">🧬 分子构建中...</div></div>
+        <div id="quiz-space">
+            <div class="bubble">丹丹已连接阿里通义大模型！快点击“AI 生题”，看看阿里大脑为你准备了什么考题？</div>
+        </div>
     </div>
     <div id="pet-container">
-        <div class="pet-dialog" id="msg">主人加油！</div>
+        <div class="pet-dialog" id="msg">准备好复习了吗？</div>
         <div class="pet-body">💊</div>
     </div>
     <div class="action-bar">
         <button class="btn btn-3d" onclick="load3D()">🔍 观察分子</button>
-        <button class="btn btn-ai" id="ai-btn" onclick="askAI()">🧠 AI 联网出题</button>
+        <button class="btn btn-ai" id="ai-btn" onclick="askQwen()">🧠 AI 联网出题</button>
     </div>
 </div>
 
 <script>
-    const KEY = "sk-02023056be5f4dc79b3e1f73a169c9aa"; 
-    let drug = null;
+    // 你的通义千问 API 密钥
+    const ALIYUN_KEY = "sk-9c2b3a4d7e574bb69ba15f2b5b1b7f45"; 
+    let currentDrug = null;
     let viewer = null;
 
-    async function askAI() {
+    async function askQwen() {
         const btn = document.getElementById('ai-btn');
         const space = document.getElementById('quiz-space');
         btn.disabled = true;
-        document.getElementById('msg').innerText = "正在思考...";
-        space.innerHTML = `<div class="bubble">AI 正在云端翻阅药典...</div>`;
+        document.getElementById('msg').innerText = "通义千问思考中...";
+        space.innerHTML = `<div class="bubble">正在请求阿里大模型生成专属考题...</div>`;
 
         try {
-            const res = await fetch("https://api.deepseek.com/chat/completions", {
+            const res = await fetch("https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions", {
                 method: "POST",
-                headers: { "Content-Type": "application/json", "Authorization": `Bearer ${KEY}` },
+                headers: { 
+                    "Content-Type": "application/json", 
+                    "Authorization": `Bearer ${ALIYUN_KEY}` 
+                },
                 body: JSON.stringify({
-                    model: "deepseek-chat",
-                    messages: [{role: "system", content: "药学专家出题。随机选一个重要西药出单选题，返回JSON格式：{name:'药名', cid:'PubChem CID', q:'题目', opts:['A','B','C','D'], a:'正确选项文字'}"}],
+                    model: "qwen-plus",
+                    messages: [{
+                        role: "system", 
+                        content: "你是一个药学专家。请随机选择一个执业药师考纲内的西药，出一道单选题。返回严格的JSON格式：{name:'药名', cid:'PubChem CID数字', q:'题目内容', opts:['A','B','C','D'], a:'正确选项文字'}"
+                    }],
                     response_format: { type: "json_object" }
                 })
             });
+
             const data = await res.json();
             const quiz = JSON.parse(data.choices[0].message.content);
-            drug = { name: quiz.name, cid: quiz.cid };
+            currentDrug = { name: quiz.name, cid: quiz.cid };
 
             space.innerHTML = `
-                <div class="bubble"><b>[考点]</b><br>${quiz.q}</div>
+                <div class="bubble"><b>[通义千问实时命题]</b><br>${quiz.q}</div>
                 ${quiz.opts.map(o => `<button class="opt-btn" onclick="check(this, '${o}'==='${quiz.a}', '${quiz.a}')">${o}</button>`).join('')}
             `;
-            document.getElementById('msg').innerText = "出好啦！";
+            document.getElementById('msg').innerText = "出好啦，加油！";
         } catch (e) {
-            space.innerHTML = `<div class="bubble">连接失败，请重试。</div>`;
+            console.error(e);
+            space.innerHTML = `<div class="bubble" style="color:red">连接阿里大脑失败，请检查网络或Key额度。</div>`;
+            document.getElementById('msg').innerText = "断网了呜呜";
         } finally { btn.disabled = false; }
     }
 
     function check(btn, isRight, a) {
-        if(isRight) { btn.classList.add('correct'); document.getElementById('msg').innerText = "真棒！"; }
-        else { btn.classList.add('wrong'); document.getElementById('msg').innerText = "答案是:"+a; }
-        document.querySelectorAll('.opt-btn').forEach(b => b.disabled = true);
+        const all = document.querySelectorAll('.opt-btn');
+        all.forEach(b => b.disabled = true);
+        if(isRight) { 
+            btn.classList.add('correct'); 
+            document.getElementById('msg').innerText = "太棒了！答对了！";
+            document.getElementById('mana-fill').style.width = "80%";
+        } else { 
+            btn.classList.add('wrong'); 
+            document.getElementById('msg').innerText = "哎呀，正确答案是："+a;
+            document.getElementById('mana-fill').style.width = "20%";
+        }
     }
 
     async function load3D() {
-        if(!drug) return alert("先请 AI 出题");
+        if(!currentDrug) return alert("请先让 AI 出题哦！");
         document.getElementById('loader').style.display = 'block';
         const box = document.getElementById('mol-container');
         const old = box.querySelector('canvas'); if(old) old.remove();
+        
         try {
-            const res = await fetch(`https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/${drug.cid}/record/SDF/?record_type=3d`);
+            const res = await fetch(`https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/${currentDrug.cid}/record/SDF/?record_type=3d`);
+            if(!res.ok) throw new Error();
             const sdf = await res.text();
             viewer = $3Dmol.createViewer(box, { backgroundColor: 'white' });
             viewer.addModel(sdf, "sdf");
             viewer.setStyle({}, {stick: {color: 'spectrum', radius: 0.25}});
             viewer.zoomTo(); viewer.render(); viewer.spin(true);
-        } catch (e) { alert("3D加载失败"); }
-        finally { document.getElementById('loader').style.display = 'none'; }
+            document.getElementById('msg').innerText = "看，这就是它的3D结构！";
+        } catch (e) { 
+            alert("3D模型加载失败，可能该药无3D数据"); 
+        } finally { 
+            document.getElementById('loader').style.display = 'none'; 
+        }
     }
 </script>
 </body>
