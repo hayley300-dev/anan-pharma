@@ -3,141 +3,196 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>安安的无限题库实验室 v11.0</title>
+    <title>安安的闪电实验室 v12.0</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/3Dmol/2.0.4/3Dmol-min.js"></script>
     <style>
-        :root { --pink: #FFD1DC; --purple: #E0BBE4; --bg: #f8f9fa; --card: #ffffff; }
+        :root { --p: #FFD1DC; --v: #E0BBE4; --bg: #fdf5f7; --card: #fff; --txt: #444; }
         * { box-sizing: border-box; font-family: 'PingFang SC', sans-serif; }
-        body { background: var(--bg); margin: 0; display: flex; flex-direction: column; align-items: center; }
-        .header { 
-            width: 100%; max-width: 500px; background: linear-gradient(135deg, var(--pink), var(--purple));
-            padding: 20px; color: white; position: sticky; top: 0; z-index: 1000;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1); border-bottom-left-radius: 20px; border-bottom-right-radius: 20px;
+        body { background: var(--bg); margin: 0; display: flex; justify-content: center; height: 100vh; overflow: hidden; }
+        .app { width: 100%; max-width: 430px; background: var(--card); display: flex; flex-direction: column; position: relative; box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
+        
+        /* 顶部状态 */
+        .header { background: linear-gradient(135deg, var(--p), var(--v)); padding: 20px; color: white; border-bottom-left-radius: 30px; }
+        .queue-tag { font-size: 10px; background: rgba(0,0,0,0.1); padding: 4px 8px; border-radius: 10px; float: right; }
+
+        /* 题目展示区 */
+        .stage { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; }
+        .quiz-container { animation: fadeIn 0.4s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .q-text { font-size: 18px; font-weight: bold; margin-bottom: 20px; color: var(--txt); line-height: 1.4; }
+        .opt { 
+            width: 100%; padding: 16px; margin-bottom: 12px; border: 2px solid #f0f0f0; 
+            border-radius: 15px; background: white; text-align: left; cursor: pointer;
+            font-size: 15px; transition: 0.2s;
         }
-        #quiz-list { width: 100%; max-width: 500px; padding: 15px; display: flex; flex-direction: column; gap: 20px; }
-        .quiz-card { 
-            background: var(--card); border-radius: 20px; padding: 20px; 
-            box-shadow: 0 4px 15px rgba(0,0,0,0.05); border: 1px solid #eee;
-            animation: slideIn 0.4s ease-out;
-        }
-        @keyframes slideIn { from { opacity:0; transform: scale(0.95); } to { opacity:1; transform: scale(1); } }
-        .quiz-q { font-weight: bold; font-size: 16px; margin-bottom: 15px; color: #333; }
-        .opt-btn { 
-            width: 100%; padding: 12px; border: 2px solid #f0f0f0; border-radius: 12px; 
-            background: white; text-align: left; cursor: pointer; margin-bottom: 8px;
-        }
-        .correct { background: #e8f5e9 !important; border-color: #4caf50 !important; color: #2e7d32; font-weight: bold; }
-        .wrong { background: #ffebee !important; border-color: #f44336 !important; color: #c62828; }
-        .mol-view { width: 100%; height: 200px; background: #fafafa; border-radius: 15px; margin-top: 15px; display: none; }
-        .batch-btn {
-            width: 80%; max-width: 300px; padding: 15px; background: var(--purple);
-            color: white; border: none; border-radius: 30px; font-size: 18px; font-weight: bold;
-            margin: 20px 0 40px; cursor: pointer; box-shadow: 0 5px 15px rgba(224,187,228,0.5);
-        }
-        #loader { text-align: center; color: var(--purple); font-weight: bold; display: none; margin-top: 10px; }
+        /* 关键：正确错误样式 */
+        .correct { background: #4caf50 !important; color: white !important; border-color: #4caf50 !important; transform: scale(1.02); }
+        .wrong { background: #ff5252 !important; color: white !important; border-color: #ff5252 !important; }
+
+        /* 3D 容器 */
+        #mol-view { width: 100%; height: 180px; background: #fafafa; border-radius: 20px; margin: 15px 0; display: none; }
+
+        /* 底部按钮 */
+        .controls { padding: 20px; display: flex; gap: 10px; background: white; border-top: 1px solid #eee; }
+        .btn { flex: 1; padding: 15px; border: none; border-radius: 20px; font-weight: bold; cursor: pointer; }
+        .btn-next { background: var(--v); color: white; display: none; }
+        .btn-mol { background: var(--p); color: white; }
+        
+        #init-loader { position: absolute; inset: 0; background: white; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 100; }
     </style>
 </head>
 <body>
 
-<div class="header">
-    <h2 style="margin:0">安安的无限题库 ✨</h2>
-    <p style="font-size: 12px; opacity: 0.9;">每次点击都会从阿里星系随机抓取新考题</p>
+<div class="app">
+    <!-- 初始化加载遮罩 -->
+    <div id="init-loader">
+        <div style="font-size: 40px; margin-bottom: 20px;">🧪</div>
+        <p>实验室初始化中...</p>
+        <p style="font-size: 12px; color: #999;">正在后台为你预热首批题目</p>
+    </div>
+
+    <div class="header">
+        <span class="queue-tag">后台缓冲: <b id="q-size">0</b></span>
+        <h3 style="margin:0">安安的闪电考场 ✨</h3>
+    </div>
+
+    <div class="stage">
+        <div id="quiz-space" class="quiz-container">
+            <p>等待 AI 派发题目...</p>
+        </div>
+        <div id="mol-view"></div>
+    </div>
+
+    <div class="controls">
+        <button class="btn btn-mol" onclick="toggleMol()">🔬 分子结构</button>
+        <button class="btn btn-next" id="next-btn" onclick="nextQuestion()">下一题 (秒开) 🚀</button>
+    </div>
 </div>
-
-<div id="quiz-list">
-    <p style="text-align:center; color:#999; margin-top:50px;">实验室待命，准备好连抽了吗？</p>
-</div>
-
-<div id="loader">🚀 正在穿越题海，为你挑选新题目...</div>
-
-<button class="batch-btn" id="gen-btn" onclick="generateBatch()">🔥 开启 AI 随机五连抽</button>
 
 <script>
     const API_KEY = "sk-9c2b3a4d7e574bb69ba15f2b5b1b7f45";
+    let quizQueue = []; // 题目缓冲队列
+    let currentQuiz = null;
+    let isFetching = false;
 
-    async function generateBatch() {
-        const btn = document.getElementById('gen-btn');
-        const loader = document.getElementById('loader');
-        btn.disabled = true;
-        loader.style.display = 'block';
+    // 1. 初始化：先抓一批题
+    init();
 
-        // 杠杆：生成一个随机盐值，迫使 AI 产生不同结果
-        const randomSalt = Math.random().toString(36).substring(7);
-        const categories = ["抗生素", "心血管系统", "中枢神经系统", "内分泌", "消化系统", "药事管理"];
-        const randomCat = categories[Math.floor(Math.random() * categories.length)];
+    async function init() {
+        await fetchMoreTasks();
+        document.getElementById('init-loader').style.display = 'none';
+        nextQuestion();
+    }
 
+    // 2. 后台取题函数 (杠杆：后台自动运行)
+    async function fetchMoreTasks() {
+        if (isFetching || quizQueue.length > 5) return;
+        isFetching = true;
+        console.log("后台：正在补充题库...");
+        
         try {
-            const response = await fetch("https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions", {
+            const res = await fetch("https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions", {
                 method: "POST",
                 headers: { "Content-Type": "application/json", "Authorization": `Bearer ${API_KEY}` },
                 body: JSON.stringify({
                     model: "qwen-plus",
                     messages: [{
                         role: "system", 
-                        content: `你是一个不重复出题的药学专家。当前的随机种子是：${randomSalt}。请从【${randomCat}】类别或随机选择药师考纲药名，一次性出5道不同的选择题。返回严格JSON格式：{"list": [{"drug":"药名", "cid":"CID数字", "q":"题目", "opts":["A", "B", "C", "D"], "a":"正确答案"}]}`
+                        content: `药学专家模式。随机种子：${Math.random()}。出3道不同的药师考题。返回JSON格式：{"list":[{"drug":"名","cid":"CID","q":"题","opts":["A","B","C","D"],"a":"答案"}]}`
                     }],
-                    // 杠杆：调高随机性温度，避免模型保守
-                    temperature: 0.85 
+                    temperature: 0.9
                 })
             });
-
-            const data = await response.json();
-            const result = JSON.parse(data.choices[0].message.content);
-            renderQuizzes(result.list);
+            const data = await res.json();
+            const newQuizzes = JSON.parse(data.choices[0].message.content).list;
+            quizQueue.push(...newQuizzes);
+            updateQueueUI();
         } catch (e) {
-            alert("可能阿里大脑短路了，再点一次试试！");
+            console.error("后台取题失败", e);
         } finally {
-            btn.disabled = false;
-            loader.style.display = 'none';
+            isFetching = false;
         }
     }
 
-    function renderQuizzes(list) {
-        const container = document.getElementById('quiz-list');
-        if(container.innerText.includes("待命")) container.innerHTML = "";
+    // 3. 切换下一题
+    function nextQuestion() {
+        if (quizQueue.length === 0) {
+            alert("你太快了！AI 还在赶工中，请稍等一秒。");
+            fetchMoreTasks();
+            return;
+        }
 
-        list.forEach((item, index) => {
-            const cardId = `card-${Date.now()}-${index}`;
-            const card = document.createElement('div');
-            card.className = 'quiz-card';
-            card.innerHTML = `
-                <div class="quiz-q">${item.q}</div>
-                <div id="opts-${cardId}">
-                    ${item.opts.map(o => `<button class="opt-btn" onclick="checkAnswer(this, '${o}', '${item.a}', '${cardId}')">${o}</button>`).join('')}
-                </div>
-                <div id="mol-view-${cardId}" class="mol-view"></div>
-                <button style="margin-top:10px; border:none; background:none; color:var(--purple); cursor:pointer; font-size:12px;" onclick="showMol('${item.cid}', '${cardId}')">🔬 查看分子模型</button>
-            `;
-            container.prepend(card);
-        });
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        currentQuiz = quizQueue.shift(); // 从队列头部拿题
+        updateQueueUI();
+        renderQuiz();
+        
+        // 杠杆：核心逻辑！只要队列少于 3 道，立刻在后台静默补充
+        if (quizQueue.length < 3) {
+            fetchMoreTasks();
+        }
     }
 
-    function checkAnswer(btn, selected, correct, cardId) {
-        const parent = document.getElementById(`opts-${cardId}`);
-        const buttons = parent.querySelectorAll('.opt-btn');
-        buttons.forEach(b => b.disabled = true);
-        if(selected === correct) {
+    function renderQuiz() {
+        const space = document.getElementById('quiz-space');
+        document.getElementById('next-btn').style.display = 'none';
+        document.getElementById('mol-view').style.display = 'none';
+        
+        space.innerHTML = `
+            <div class="q-text">${currentQuiz.q}</div>
+            <div id="opts-box">
+                ${currentQuiz.opts.map(o => `<button class="opt" onclick="checkAnswer(this, '${o}')">${o}</button>`).join('')}
+            </div>
+        `;
+    }
+
+    // 4. 判题逻辑（带修正）
+    function checkAnswer(btn, selected) {
+        const buttons = document.querySelectorAll('.opt');
+        buttons.forEach(b => b.disabled = true); // 防止重复点击
+
+        const correct = currentQuiz.a.trim();
+        const selectedTrim = selected.trim();
+
+        if (selectedTrim === correct) {
             btn.classList.add('correct');
         } else {
             btn.classList.add('wrong');
-            buttons.forEach(b => { if(b.innerText === correct) b.classList.add('correct'); });
+            // 高亮正确的那一个
+            buttons.forEach(b => {
+                if(b.innerText.trim() === correct) b.classList.add('correct');
+            });
         }
+
+        // 显示“下一题”按钮
+        document.getElementById('next-btn').style.display = 'block';
     }
 
-    async function showMol(cid, cardId) {
-        const view = document.getElementById(`mol-view-${cardId}`);
+    function updateQueueUI() {
+        document.getElementById('q-size').innerText = quizQueue.length;
+    }
+
+    // 5. 3D 分子切换
+    async function toggleMol() {
+        const view = document.getElementById('mol-view');
+        if (view.style.display === 'block') {
+            view.style.display = 'none';
+            return;
+        }
         view.style.display = 'block';
-        view.innerHTML = "载入中...";
+        view.innerHTML = "<p style='text-align:center; padding-top:70px; font-size:12px;'>模型载入中...</p>";
+        
         try {
-            const res = await fetch(`https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/${cid}/record/SDF/?record_type=3d`);
+            const res = await fetch(`https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/${currentQuiz.cid}/record/SDF/?record_type=3d`);
             const sdf = await res.text();
             view.innerHTML = "";
             let viewer = $3Dmol.createViewer(view, { backgroundColor: 'white' });
             viewer.addModel(sdf, "sdf");
-            viewer.setStyle({}, {stick: {color: 'spectrum', radius: 0.2}});
+            viewer.setStyle({}, {stick: {color: 'spectrum', radius: 0.25}});
             viewer.zoomTo(); viewer.render(); viewer.spin(true);
-        } catch (e) { view.innerHTML = "无模型"; }
+        } catch (e) {
+            view.innerHTML = "<p style='text-align:center; padding-top:70px;'>该药品无3D模型</p>";
+        }
     }
 </script>
 </body>
